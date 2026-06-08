@@ -1,6 +1,27 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+apply plugin: "com.google.gms.google-services"
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { stream ->
+        localProperties.load(stream)
+    }
+}
+
+def releaseStoreFile = localProperties.getProperty("HIPPO_RELEASE_STORE_FILE")
+def releaseKeyAlias = localProperties.getProperty("HIPPO_RELEASE_KEY_ALIAS")
+def releaseStorePassword = localProperties.getProperty("HIPPO_RELEASE_STORE_PASSWORD")
+def releaseKeyPassword = localProperties.getProperty("HIPPO_RELEASE_KEY_PASSWORD")
+
+def hasReleaseSigningConfig =
+        releaseStoreFile != null &&
+                releaseKeyAlias != null &&
+                releaseStorePassword != null &&
+                releaseKeyPassword != null
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -87,20 +108,37 @@ android {
     }
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+            if (hasReleaseSigningConfig) {
+                storeFile rootProject.file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+
+        release {
+            if (hasReleaseSigningConfig) {
+                storeFile rootProject.file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
         }
     }
+
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
+
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            if (!hasReleaseSigningConfig) {
+                throw new GradleException(
+                        "Release signing config is missing. Please add HIPPO_RELEASE_STORE_FILE, HIPPO_RELEASE_KEY_ALIAS, HIPPO_RELEASE_STORE_PASSWORD, and HIPPO_RELEASE_KEY_PASSWORD in android/local.properties"
+                )
+            }
+
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
