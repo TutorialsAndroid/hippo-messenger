@@ -1,68 +1,70 @@
-import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import React, {
+  useEffect,
+  useState,
+} from 'react';
+
 import auth from '@react-native-firebase/auth';
 
-import { ChatRoom } from '../types';
-import { subscribeChatRooms } from '../services/chatService';
+import {
+  View,
+  Text,
+  FlatList,
+} from 'react-native';
+
+import {
+  ChatPreview,
+} from '../types';
+
+import {
+  subscribeRecentChats,
+} from '../services/chatService';
 
 export default function ChatsScreen() {
-  const [rooms, setRooms] =
-    useState<ChatRoom[]>([]);
+  const [chats, setChats] =
+    useState<ChatPreview[]>([]);
 
   useEffect(() => {
-    const uid = auth().currentUser?.uid;
+    const uid =
+      auth().currentUser?.uid;
 
     if (!uid) {
       return;
     }
 
-    const unsubscribe =
-      subscribeChatRooms(uid, setRooms);
-
-    return unsubscribe;
+    return subscribeRecentChats(
+      uid,
+      setChats,
+    );
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Chats</Text>
+    <FlatList
+      data={chats}
+      keyExtractor={item =>
+        item.chatId
+      }
+      renderItem={({ item }) => (
+        <View>
+          <Text>
+            {item.peer.name}
+          </Text>
 
-      <FlatList
-        data={rooms}
-        keyExtractor={item => item.chatId}
-        renderItem={({ item }) => (
-          <View style={styles.chatItem}>
-            <Text>
-              {Object.values(
-                item.memberInfo,
-              )
-                .map(m => m.name)
-                .join(', ')}
-            </Text>
+          <Text>
+            {item.lastMessage
+              ?.text ||
+              'No messages'}
+          </Text>
 
+          {item.unreadCount >
+            0 && (
             <Text>
-              {item.lastMessage?.text ||
-                'No messages'}
+              {
+                item.unreadCount
+              }
             </Text>
-          </View>
-        )}
-      />
-    </View>
+          )}
+        </View>
+      )}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    margin: 20,
-  },
-
-  chatItem: {
-    padding: 20,
-    borderBottomWidth: 1,
-  },
-});

@@ -12,7 +12,7 @@ import {
   ServerValue,
 } from '@react-native-firebase/database';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { ChatRoom, HippoMessage, HippoUser } from '../types';
+import { ChatPreview, ChatRoom, HippoMessage, HippoUser } from '../types';
 import { cleanMessageText, getChatId } from '../utils/chat';
 
 export async function ensureChatRoom(
@@ -195,6 +195,74 @@ export function subscribeChatRooms(
   });
 
   return unsubscribe;
+}
+
+export function subscribeRecentChats(
+  currentUid: string,
+  callback: (chats: ChatPreview[]) => void,
+) {
+  const db = getDatabase();
+
+  return onValue(
+    ref(db, '/chatRooms'),
+    snapshot => {
+      const chats: ChatPreview[] = [];
+
+      snapshot.forEach(child => {
+        const room =
+          child.val() as ChatRoom;
+
+        if (
+          !room.members?.[currentUid]
+        ) {
+          return;
+        }
+
+        const peer =
+          Object.values(
+            room.memberInfo,
+          ).find(
+            member =>
+              member.uid !== currentUid,
+          );
+
+        if (!peer) {
+          return;
+        }
+
+        chats.push({
+          chatId: room.chatId,
+
+          peer: {
+            uid: peer.uid,
+            name: peer.name,
+            email: peer.email,
+            photoURL:
+              peer.photoURL,
+          },
+
+          lastMessage:
+            room.lastMessage,
+
+          unreadCount:
+            room.unread?.[
+              currentUid
+            ] || 0,
+
+          updatedAt:
+            room.updatedAt,
+        });
+      });
+
+      chats.sort(
+        (a, b) =>
+          b.updatedAt -
+          a.updatedAt,
+      );
+
+      callback(chats);
+    },
+  );
 }
 
 export async function setTypingStatus(

@@ -47,3 +47,20 @@ export interface ChatRoom {
   createdAt: number;
   updatedAt: number;
 }
+
+export interface ChatPreview {
+  chatId: string;
+
+  peer: HippoUser;
+
+  lastMessage?: {
+    text: string;
+    senderId: string;
+    receiverId: string;
+    createdAt: number;
+  };
+
+  unreadCount: number;
+
+  updatedAt: number;
+}
