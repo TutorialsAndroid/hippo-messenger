@@ -19,7 +19,13 @@ import { RootStackParamList } from '../navigation/types';
 import { HippoMessage } from '../types';
 import { getChatId } from '../utils/chat';
 import { formatLastSeen } from '../utils/time';
-import { sendTextMessage, subscribeMessages } from '../services/chatService';
+import {
+  sendTextMessage,
+  subscribeMessages,
+  setTypingStatus,
+  subscribeTypingStatus,
+  markChatAsRead,
+} from '../services/chatService';
 import Avatar from '../components/Avatar';
 import ChatBubble from '../components/ChatBubble';
 import EmptyState from '../components/EmptyState';
@@ -35,6 +41,9 @@ export default function ChatScreen({ navigation, route }: Props) {
   const [text, setText] = useState('');
   const [messages, setMessages] = useState<HippoMessage[]>([]);
   const [sending, setSending] = useState(false);
+  const [peerTyping, setPeerTyping] = useState(false);
+
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!currentUser?.uid) {
@@ -43,16 +52,19 @@ export default function ChatScreen({ navigation, route }: Props) {
 
     const chatId = getChatId(currentUser.uid, peer.uid);
 
-    // Reset unread count when chat opens
-    const roomRef = ref(getDatabase(), `/chatRooms/${chatId}`);
+    console.log('MARK READ');
+    markChatAsRead(chatId, currentUser.uid);
 
-    update(roomRef, {
-      [`unread/${currentUser.uid}`]: 0,
-    }).catch(console.error);
+    const messagesUnsubscribe = subscribeMessages(chatId, setMessages);
 
-    const unsubscribe = subscribeMessages(chatId, setMessages);
+    const typingUnsubscribe = subscribeTypingStatus(chatId, typing => {
+      setPeerTyping(typing[peer.uid] || false);
+    });
 
-    return unsubscribe;
+    return () => {
+      messagesUnsubscribe();
+      typingUnsubscribe();
+    };
   }, [currentUser?.uid, peer.uid]);
 
   async function handleSend() {
@@ -64,6 +76,10 @@ export default function ChatScreen({ navigation, route }: Props) {
       setSending(true);
 
       await sendTextMessage(currentUser, peer, message);
+      const chatId = getChatId(currentUser.uid, peer.uid);
+
+      console.log('SET TYPING');
+      await setTypingStatus(chatId, currentUser.uid, false);
 
       requestAnimationFrame(() => {
         listRef.current?.scrollToEnd({ animated: true });
@@ -105,8 +121,10 @@ export default function ChatScreen({ navigation, route }: Props) {
             <Text style={styles.name} numberOfLines={1}>
               {peer.name}
             </Text>
-            <Text style={styles.status} numberOfLines={1}>
-              {peer.online
+            <Text style={styles.status}>
+              {peerTyping
+                ? 'Typing...'
+                : peer.online
                 ? 'Online now'
                 : `Last seen ${formatLastSeen(peer.lastSeen)}`}
             </Text>
@@ -139,7 +157,25 @@ export default function ChatScreen({ navigation, route }: Props) {
         <View style={styles.composer}>
           <TextInput
             value={text}
-            onChangeText={setText}
+            onChangeText={value => {
+              setText(value);
+
+              if (!currentUser) {
+                return;
+              }
+
+              const chatId = getChatId(currentUser.uid, peer.uid);
+
+              setTypingStatus(chatId, currentUser.uid, true);
+
+              if (typingTimeout.current) {
+                clearTimeout(typingTimeout.current);
+              }
+
+              typingTimeout.current = setTimeout(() => {
+                setTypingStatus(chatId, currentUser.uid, false);
+              }, 1500);
+            }}
             placeholder="Write a message..."
             placeholderTextColor={colors.muted}
             style={styles.input}

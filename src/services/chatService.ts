@@ -120,6 +120,7 @@ export async function sendTextMessage(
       text,
       senderId: currentUser.uid,
       receiverId: peer.uid,
+      type: 'text',
       createdAt: ServerValue.TIMESTAMP,
     },
 
@@ -194,4 +195,53 @@ export function subscribeChatRooms(
   });
 
   return unsubscribe;
+}
+
+export async function setTypingStatus(
+  chatId: string,
+  uid: string,
+  isTyping: boolean,
+) {
+  try {
+    console.log('TYPING START', isTyping);
+
+    const db = getDatabase();
+
+    await update(ref(db, `/chatRooms/${chatId}`), {
+      [`typing/${uid}`]: isTyping,
+    });
+
+    console.log('TYPING SUCCESS');
+  } catch (e) {
+    console.log('TYPING ERROR', e);
+    throw e;
+  }
+}
+
+export function subscribeTypingStatus(
+  chatId: string,
+  callback: (typingUsers: Record<string, boolean>) => void,
+) {
+  const db = getDatabase();
+
+  return onValue(ref(db, `/chatRooms/${chatId}/typing`), snapshot => {
+    callback((snapshot.val() || {}) as Record<string, boolean>);
+  });
+}
+
+export async function markChatAsRead(chatId: string, uid: string) {
+  try {
+    console.log('MARK READ START');
+
+    const db = getDatabase();
+
+    await update(ref(db, `/chatRooms/${chatId}`), {
+      [`unread/${uid}`]: 0,
+    });
+
+    console.log('MARK READ SUCCESS');
+  } catch (e) {
+    console.log('MARK READ ERROR', e);
+    throw e;
+  }
 }
