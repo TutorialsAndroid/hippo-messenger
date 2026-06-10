@@ -62,5 +62,7 @@ export interface ChatPreview {
 
   unreadCount: number;
 
+  typing: boolean;
+
   updatedAt: number;
 }
