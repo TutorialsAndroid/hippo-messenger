@@ -84,10 +84,24 @@ The current version is focused on **Phase 1**, which includes a complete and wor
 
 ## 📱 Screenshots
 
-| Login Screen                                                           | Chat List                                                              |                                                       |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| ![Login](screenshots/Screenshot_1780912370.png) | ![Chats](screenshots/Screenshot_1780912392.png) | 
-<!-- ![Chat](https://via.placeholder.com/260x520/EEF2FF/111827?text=Chat) | -->
+<p align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <b>Login Screen</b><br><br>
+        <img src="screenshots/Screenshot_1780912370.png" width="110%" alt="Hippo Messenger Login Screen"/>
+      </td>
+      <td align="center">
+        <b>Chat List</b><br><br>
+        <img src="screenshots/Screenshot_1781094296.png" width="110%" alt="Hippo Messenger Chat List"/>
+      </td>
+      <td align="center">
+        <b>Chat Screen</b><br><br>
+        <img src="screenshots/Screenshot_1781094331.png" width="110%" alt="Hippo Messenger Chat Screen"/>
+      </td>
+    </tr>
+  </table>
+</p>
 
 ---
 
