@@ -23,7 +23,7 @@ import EmptyState from '../components/EmptyState';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-export default function HomeScreen({ navigation }: Props) {
+export default function UsersScreen({ navigation }: Props) {
   const currentUser = getAuth().currentUser;
   const [users, setUsers] = useState<HippoUser[]>([]);
   const [search, setSearch] = useState('');

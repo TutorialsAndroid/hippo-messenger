@@ -1,7 +1,10 @@
 import { HippoUser } from '../types';
 
 export type RootStackParamList = {
-  Home: undefined;
+  Login: undefined;
+
+  MainTabs: undefined;
+
   Chat: {
     peer: HippoUser;
   };

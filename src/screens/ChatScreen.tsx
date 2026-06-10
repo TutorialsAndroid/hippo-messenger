@@ -23,6 +23,7 @@ import { sendTextMessage, subscribeMessages } from '../services/chatService';
 import Avatar from '../components/Avatar';
 import ChatBubble from '../components/ChatBubble';
 import EmptyState from '../components/EmptyState';
+import { getDatabase, ref, update } from '@react-native-firebase/database';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
@@ -36,11 +37,22 @@ export default function ChatScreen({ navigation, route }: Props) {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid) {
+      return;
+    }
 
     const chatId = getChatId(currentUser.uid, peer.uid);
 
-    return subscribeMessages(chatId, setMessages);
+    // Reset unread count when chat opens
+    const roomRef = ref(getDatabase(), `/chatRooms/${chatId}`);
+
+    update(roomRef, {
+      [`unread/${currentUser.uid}`]: 0,
+    }).catch(console.error);
+
+    const unsubscribe = subscribeMessages(chatId, setMessages);
+
+    return unsubscribe;
   }, [currentUser?.uid, peer.uid]);
 
   async function handleSend() {
@@ -75,7 +87,10 @@ export default function ChatScreen({ navigation, route }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
             <Text style={styles.backText}>‹</Text>
           </Pressable>
 
@@ -91,7 +106,9 @@ export default function ChatScreen({ navigation, route }: Props) {
               {peer.name}
             </Text>
             <Text style={styles.status} numberOfLines={1}>
-              {peer.online ? 'Online now' : `Last seen ${formatLastSeen(peer.lastSeen)}`}
+              {peer.online
+                ? 'Online now'
+                : `Last seen ${formatLastSeen(peer.lastSeen)}`}
             </Text>
           </View>
         </View>
@@ -106,7 +123,10 @@ export default function ChatScreen({ navigation, route }: Props) {
             listRef.current?.scrollToEnd({ animated: true });
           }}
           renderItem={({ item }) => (
-            <ChatBubble message={item} mine={item.senderId === currentUser?.uid} />
+            <ChatBubble
+              message={item}
+              mine={item.senderId === currentUser?.uid}
+            />
           )}
           ListEmptyComponent={
             <EmptyState
