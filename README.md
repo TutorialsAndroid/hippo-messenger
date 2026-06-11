@@ -14,14 +14,11 @@ A modern real-time messaging app built with React Native & Firebase
 
 
 <p align="center">
-
-![React Native](https://img.shields.io/badge/React%20Native-0.81-blue?style=for-the-badge&logo=react)
-
-![Firebase](https://img.shields.io/badge/Firebase-Realtime-orange?style=for-the-badge&logo=firebase)
-
-![TypeScript](https://img.shields.io/badge/TypeScript-Enabled-blue?style=for-the-badge&logo=typescript)
-
-![Android](https://img.shields.io/badge/Android-Supported-green?style=for-the-badge&logo=android)
+  
+  ![React Native](https://img.shields.io/badge/React%20Native-0.81-blue?style=for-the-badge&logo=react)
+  ![Firebase](https://img.shields.io/badge/Firebase-Realtime-orange?style=for-the-badge&logo=firebase)
+  ![TypeScript](https://img.shields.io/badge/TypeScript-Enabled-blue?style=for-the-badge&logo=typescript)
+  ![Android](https://img.shields.io/badge/Android-Supported-green?style=for-the-badge&logo=android)
 
 </p>
 
