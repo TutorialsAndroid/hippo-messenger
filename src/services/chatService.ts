@@ -318,3 +318,43 @@ export async function markChatAsRead(chatId: string, uid: string) {
     throw e;
   }
 }
+
+export async function syncUserProfileToChats(
+  uid: string,
+  updates: {
+    name?: string;
+    photoURL?: string | null;
+  },
+) {
+  const db = getDatabase();
+
+  const snapshot = await get(ref(db, 'chatRooms'));
+
+  if (!snapshot.exists()) {
+    return;
+  }
+
+  const updatesMap: any = {};
+
+  snapshot.forEach(child => {
+    const room = child.val();
+
+    if (room.members?.[uid]) {
+      if (updates.name !== undefined) {
+        updatesMap[`/chatRooms/${child.key}/memberInfo/${uid}/name`] =
+          updates.name;
+      }
+
+      if (updates.photoURL !== undefined) {
+        updatesMap[`/chatRooms/${child.key}/memberInfo/${uid}/photoURL`] =
+          updates.photoURL;
+      }
+    }
+
+    return undefined;
+  });
+
+  if (Object.keys(updatesMap).length) {
+    await update(ref(db), updatesMap);
+  }
+}

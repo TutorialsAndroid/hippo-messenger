@@ -86,23 +86,23 @@ export function subscribeUserProfile(
 export async function updateUserProfile(
   uid: string,
   data: {
-    name: string;
+    name?: string;
+    photoURL?: string | null;
   },
 ) {
   const db = getDatabase();
 
-  await update(ref(db, `users/${uid}`), {
-    name: data.name,
-    updatedAt: ServerValue.TIMESTAMP,
+  await update(ref(db, `/users/${uid}`), {
+    ...(data.name && {
+      name: data.name.trim(),
+    }),
+
+    ...(data.photoURL && {
+      photoURL: data.photoURL,
+    }),
+
+    updatedAt: Date.now(),
   });
-
-  const user = getAuth().currentUser;
-
-  if (user) {
-    await updateProfile(user, {
-      displayName: data.name,
-    });
-  }
 }
 
 export function subscribeUser(

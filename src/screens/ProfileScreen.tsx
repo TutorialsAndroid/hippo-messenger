@@ -25,7 +25,7 @@ import { RootStackParamList } from '../navigation/types';
 export default function ProfileScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-    
+
   const profile = useUserProfile();
   if (!profile) {
     return null;
@@ -236,6 +236,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
 
     marginBottom: 12,
+    marginTop: 20,
+    marginLeft: 16,
+    marginRight: 16,
   },
 
   actionText: {

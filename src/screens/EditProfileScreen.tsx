@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   Alert,
@@ -7,6 +7,7 @@ import {
   Text,
   TextInput,
   View,
+  Image,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,20 +26,67 @@ import { updateUserProfile } from '../services/userService';
 
 import { syncUserProfileToChats } from '../services/profileSyncService';
 
+import { launchImageLibrary } from 'react-native-image-picker';
+
+import { uploadProfileImage } from '../services/storageService';
+
+import auth from '@react-native-firebase/auth';
+
 type Props = NativeStackScreenProps<RootStackParamList, 'EditProfile'>;
 
 export default function EditProfileScreen({ navigation }: Props) {
+  const currentUser = auth().currentUser;
   const profile = useUserProfile();
 
   const [name, setName] = useState(profile?.name || '');
 
   const [saving, setSaving] = useState(false);
 
+  const [uploading, setUploading] = useState(false);
+
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const [previewImage, setPreviewImage] = useState<string | null>(
+    currentUser?.photoURL || null,
+  );
+
+  useEffect(() => {
+    if (currentUser) {
+      setName(currentUser.displayName || '');
+    }
+  }, []);
+
+  async function handlePickImage() {
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
+
+      selectionLimit: 1,
+    });
+
+    if (result.didCancel || !result.assets || !result.assets[0].uri) {
+      return;
+    }
+
+    const imageUri = result.assets[0].uri;
+
+    setSelectedImage(imageUri);
+    setPreviewImage(imageUri);
+  }
+
   async function handleSave() {
     const cleanName = name.trim();
 
-    if (!cleanName) {
-      Alert.alert('Invalid Name', 'Name cannot be empty');
+    const currentUser = getAuth().currentUser;
+
+    if (!currentUser) {
+      return;
+    }
+
+    if (!cleanName && !selectedImage) {
+      Alert.alert(
+        'Nothing to update',
+        'Please change your name or profile photo',
+      );
 
       return;
     }
@@ -46,26 +94,42 @@ export default function EditProfileScreen({ navigation }: Props) {
     try {
       setSaving(true);
 
-      const uid = getAuth().currentUser?.uid;
+      const uid = currentUser.uid;
 
-      if (!uid) {
-        return;
+      let updatedPhotoURL = currentUser.photoURL ?? null;
+
+      // 1. Upload new image
+      if (selectedImage) {
+        updatedPhotoURL = await uploadProfileImage(uid, selectedImage);
       }
 
-      // Update main user profile
-      await updateUserProfile(uid, {
-        name: cleanName,
+      // 2. Update Firebase Auth profile
+      await currentUser.updateProfile({
+        displayName: cleanName || currentUser.displayName || 'Hippo User',
+
+        photoURL: updatedPhotoURL,
       });
 
-      // Sync name to existing chats
+      // Refresh auth user data
+      await currentUser.reload();
+
+      // 3. Update Realtime Database users/{uid}
+      await updateUserProfile(uid, {
+        name: cleanName || currentUser.displayName || 'Hippo User',
+
+        photoURL: updatedPhotoURL,
+      });
+
+      // 4. Update existing chat rooms
       await syncUserProfileToChats(uid, {
-        name: cleanName,
-        photoURL: getAuth().currentUser?.photoURL ?? null,
+        name: cleanName || currentUser.displayName || 'Hippo User',
+
+        photoURL: updatedPhotoURL,
       });
 
       navigation.goBack();
     } catch (error) {
-      console.log(error);
+      console.log('PROFILE UPDATE ERROR', error);
 
       Alert.alert('Error', 'Unable to update profile');
     } finally {
@@ -82,6 +146,23 @@ export default function EditProfileScreen({ navigation }: Props) {
 
         <Text style={styles.title}>Edit Profile</Text>
       </View>
+
+      <Pressable onPress={handlePickImage} style={styles.avatarWrapper}>
+        <Image
+          source={
+            previewImage
+              ? { uri: previewImage }
+              : require('../assets/default-avatar.jpg')
+          }
+          style={styles.avatar}
+        />
+
+        <View style={styles.changePhotoButton}>
+          <Text style={styles.changePhotoText}>
+            {uploading ? 'Uploading...' : 'Change Photo'}
+          </Text>
+        </View>
+      </Pressable>
 
       <View style={styles.content}>
         <Text style={styles.label}>Name</Text>
@@ -199,5 +280,53 @@ const styles = StyleSheet.create({
     fontSize: 16,
 
     fontWeight: '800',
+  },
+
+  avatarWrapper: {
+    alignItems: 'center',
+
+    marginTop: 20,
+
+    marginBottom: 30,
+  },
+
+  avatar: {
+    width: 120,
+
+    height: 120,
+
+    borderRadius: 60,
+
+    backgroundColor: colors.card,
+
+    borderWidth: 2,
+
+    borderColor: colors.primary,
+  },
+
+  changePhotoButton: {
+    marginTop: 12,
+
+    paddingHorizontal: 20,
+
+    height: 42,
+
+    borderRadius: 15,
+
+    backgroundColor: colors.card,
+
+    alignItems: 'center',
+
+    justifyContent: 'center',
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+  },
+
+  changePhotoText: {
+    color: colors.text,
+
+    fontWeight: '700',
   },
 });
