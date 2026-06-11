@@ -30,6 +30,7 @@ import Avatar from '../components/Avatar';
 import ChatBubble from '../components/ChatBubble';
 import EmptyState from '../components/EmptyState';
 import { getDatabase, ref, update } from '@react-native-firebase/database';
+import { subscribeUser } from '../services/userService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
@@ -42,6 +43,8 @@ export default function ChatScreen({ navigation, route }: Props) {
   const [messages, setMessages] = useState<HippoMessage[]>([]);
   const [sending, setSending] = useState(false);
   const [peerTyping, setPeerTyping] = useState(false);
+
+  const [livePeer, setLivePeer] = useState(peer);
 
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -66,6 +69,14 @@ export default function ChatScreen({ navigation, route }: Props) {
       typingUnsubscribe();
     };
   }, [currentUser?.uid, peer.uid]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeUser(peer.uid, user => {
+      setLivePeer(user);
+    });
+
+    return unsubscribe;
+  }, [peer.uid]);
 
   async function handleSend() {
     if (!currentUser || sending) return;
@@ -111,22 +122,22 @@ export default function ChatScreen({ navigation, route }: Props) {
           </Pressable>
 
           <Avatar
-            name={peer.name}
-            photoURL={peer.photoURL}
-            online={peer.online}
+            name={livePeer.name}
+            photoURL={livePeer.photoURL}
+            online={livePeer.online}
             size={44}
           />
 
           <View style={styles.headerText}>
             <Text style={styles.name} numberOfLines={1}>
-              {peer.name}
+              {livePeer.name}
             </Text>
             <Text style={styles.status}>
               {peerTyping
                 ? 'Typing...'
-                : peer.online
+                : livePeer.online
                 ? 'Online now'
-                : `Last seen ${formatLastSeen(peer.lastSeen)}`}
+                : `Last seen ${formatLastSeen(livePeer.lastSeen)}`}
             </Text>
           </View>
         </View>
@@ -149,7 +160,7 @@ export default function ChatScreen({ navigation, route }: Props) {
           ListEmptyComponent={
             <EmptyState
               title="Start the conversation"
-              message={`Say hello to ${peer.name}. Your messages will sync instantly.`}
+              message={`Say hello to ${livePeer.name}. Your messages will sync instantly.`}
             />
           }
         />

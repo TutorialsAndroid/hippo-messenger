@@ -4,6 +4,7 @@ import { RootStackParamList } from './types';
 import UsersScreen from '../screens/UsersScreen';
 import ChatScreen from '../screens/ChatScreen';
 import MainTabs from './MainTabs';
+import EditProfileScreen from '../screens/EditProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -23,6 +24,8 @@ export default function RootNavigator() {
         }}
       />
       <Stack.Screen name="Chat" component={ChatScreen} />
+
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
     </Stack.Navigator>
   );
 }

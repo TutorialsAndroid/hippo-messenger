@@ -9,16 +9,27 @@ import {
   View,
 } from 'react-native';
 
-import { getAuth } from '@react-native-firebase/auth';
+import useUserProfile from '../hooks/useUserProfile';
 
-import { signOut } from '@react-native-firebase/auth';
+import { getAuth, signOut } from '@react-native-firebase/auth';
 
 import Avatar from '../components/Avatar';
 
 import { colors } from '../constants/theme';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+import { useNavigation } from '@react-navigation/native';
+
+import { RootStackParamList } from '../navigation/types';
 
 export default function ProfileScreen() {
-  const user = getAuth().currentUser;
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    
+  const profile = useUserProfile();
+  if (!profile) {
+    return null;
+  }
 
   async function handleLogout() {
     try {
@@ -28,10 +39,6 @@ export default function ProfileScreen() {
     }
   }
 
-  if (!user) {
-    return null;
-  }
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HEADER */}
@@ -39,17 +46,17 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <View style={styles.avatarWrapper}>
           <Avatar
-            name={user.displayName || 'Hippo User'}
-            photoURL={user.photoURL}
+            name={profile.name || 'Hippo User'}
+            photoURL={profile.photoURL}
             size={100}
           />
 
           <View style={styles.onlineDot} />
         </View>
 
-        <Text style={styles.name}>{user.displayName || 'Hippo User'}</Text>
+        <Text style={styles.name}>{profile.name || 'Hippo User'}</Text>
 
-        <Text style={styles.email}>{user.email}</Text>
+        <Text style={styles.email}>{profile.email}</Text>
       </View>
 
       {/* ACCOUNT CARD */}
@@ -57,9 +64,9 @@ export default function ProfileScreen() {
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Account</Text>
 
-        <ProfileRow label="Name" value={user.displayName || '-'} />
+        <ProfileRow label="Name" value={profile.name || '-'} />
 
-        <ProfileRow label="Email" value={user.email || '-'} />
+        <ProfileRow label="Email" value={profile.email || '-'} />
       </View>
 
       {/* SETTINGS */}
@@ -71,6 +78,14 @@ export default function ProfileScreen() {
 
         <ProfileRow label="Privacy" value="Default" />
       </View>
+
+      {/* ACTIONS */}
+      <Pressable
+        onPress={() => navigation.navigate('EditProfile')}
+        style={styles.action}
+      >
+        <Text style={styles.actionText}>Edit Profile</Text>
+      </Pressable>
 
       {/* LOGOUT */}
 
@@ -208,5 +223,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
 
     fontWeight: '800',
+  },
+  action: {
+    height: 50,
+
+    borderRadius: 16,
+
+    backgroundColor: colors.card,
+
+    justifyContent: 'center',
+
+    paddingHorizontal: 16,
+
+    marginBottom: 12,
+  },
+
+  actionText: {
+    fontSize: 16,
+
+    fontWeight: '700',
+
+    color: colors.text,
   },
 });

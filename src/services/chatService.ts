@@ -176,17 +176,32 @@ export function subscribeChatRooms(
 ) {
   const db = getDatabase();
 
-  const unsubscribe = onValue(ref(db, '/chatRooms'), snapshot => {
+  const unsubscribe = onValue(ref(db, 'chatRooms'), async snapshot => {
     const rooms: ChatRoom[] = [];
+
+    const usersSnapshot = await get(ref(db, 'users'));
 
     snapshot.forEach(child => {
       const room = child.val() as ChatRoom;
 
       if (room.members?.[currentUid]) {
+        Object.keys(room.memberInfo).forEach(uid => {
+          const user = usersSnapshot.child(uid).val();
+
+          if (user) {
+            room.memberInfo[uid] = {
+              uid: user.uid,
+              name: user.name,
+              email: user.email,
+              photoURL: user.photoURL,
+              online: user.online,
+              lastSeen: user.lastSeen,
+            };
+          }
+        });
+
         rooms.push(room);
       }
-
-      return undefined;
     });
 
     rooms.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
@@ -247,22 +262,12 @@ export function subscribeRecentChats(
   });
 }
 
-export async function setTyping(
-  chatId: string,
-  uid: string,
-  typing: boolean,
-) {
+export async function setTyping(chatId: string, uid: string, typing: boolean) {
   const db = getDatabase();
 
-  await update(
-    ref(
-      db,
-      `/chatRooms/${chatId}/typing`,
-    ),
-    {
-      [uid]: typing,
-    },
-  );
+  await update(ref(db, `/chatRooms/${chatId}/typing`), {
+    [uid]: typing,
+  });
 }
 
 export async function setTypingStatus(

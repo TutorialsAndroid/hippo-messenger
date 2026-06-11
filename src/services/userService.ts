@@ -11,6 +11,7 @@ import {
 } from '@react-native-firebase/database';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { HippoUser } from '../types';
+import { getAuth, updateProfile } from '@react-native-firebase/auth';
 
 export async function upsertCurrentUser(user: FirebaseAuthTypes.User) {
   const db = getDatabase();
@@ -61,4 +62,58 @@ export function subscribeUsers(
   });
 
   return unsubscribe;
+}
+
+export function subscribeUserProfile(
+  uid: string,
+  callback: (user: HippoUser | null) => void,
+) {
+  const db = getDatabase();
+
+  const userRef = ref(db, `/users/${uid}`);
+
+  const unsubscribe = onValue(userRef, snapshot => {
+    if (snapshot.exists()) {
+      callback(snapshot.val());
+    } else {
+      callback(null);
+    }
+  });
+
+  return unsubscribe;
+}
+
+export async function updateUserProfile(
+  uid: string,
+  data: {
+    name: string;
+  },
+) {
+  const db = getDatabase();
+
+  await update(ref(db, `users/${uid}`), {
+    name: data.name,
+    updatedAt: ServerValue.TIMESTAMP,
+  });
+
+  const user = getAuth().currentUser;
+
+  if (user) {
+    await updateProfile(user, {
+      displayName: data.name,
+    });
+  }
+}
+
+export function subscribeUser(
+  uid: string,
+  callback: (user: HippoUser) => void,
+) {
+  const db = getDatabase();
+
+  return onValue(ref(db, `users/${uid}`), snapshot => {
+    if (snapshot.exists()) {
+      callback(snapshot.val());
+    }
+  });
 }

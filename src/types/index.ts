@@ -18,25 +18,31 @@ export type HippoMessage = {
   createdAt: number;
 };
 
+export interface ChatMemberInfo {
+  uid: string;
+  name: string;
+  email: string;
+  photoURL?: string | null;
+
+  online?: boolean;
+
+  lastSeen?: number;
+}
+
 export interface ChatRoom {
   chatId: string;
 
   members: Record<string, boolean>;
 
-  memberInfo: Record<
-    string,
-    {
-      uid: string;
-      name: string;
-      email: string;
-      photoURL?: string | null;
-    }
-  >;
+  memberInfo: Record<string, ChatMemberInfo>;
 
   lastMessage?: {
     text: string;
+
     senderId: string;
+
     receiverId: string;
+
     createdAt: number;
   };
 
@@ -45,6 +51,7 @@ export interface ChatRoom {
   typing?: Record<string, boolean>;
 
   createdAt: number;
+
   updatedAt: number;
 }
 

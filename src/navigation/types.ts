@@ -8,4 +8,6 @@ export type RootStackParamList = {
   Chat: {
     peer: HippoUser;
   };
+
+  EditProfile: undefined;
 };
