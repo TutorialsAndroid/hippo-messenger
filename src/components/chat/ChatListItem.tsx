@@ -54,8 +54,13 @@ export default function ChatListItem({ chat, onPress }: Props) {
         </View>
 
         <View style={styles.bottomRow}>
-          <Text numberOfLines={1} style={styles.message}>
-            {chat.lastMessage?.text || 'Start chatting'}
+          <Text
+            numberOfLines={1}
+            style={[styles.message, chat.typing && styles.typingText]}
+          >
+            {chat.typing
+              ? 'Typing...'
+              : chat.lastMessage?.text || 'Start chatting'}
           </Text>
 
           <UnreadBadge count={chat.unreadCount} />
@@ -142,5 +147,9 @@ const styles = StyleSheet.create({
     color: '#6B7280',
 
     marginRight: 10,
+  },
+  typingText: {
+    color: '#22C55E',
+    fontWeight: '600',
   },
 });
